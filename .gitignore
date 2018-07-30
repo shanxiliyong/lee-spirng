@@ -1,0 +1,40 @@
+# Compiled class file
+*.class
+/*/target
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+#Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IntelliJ project files
+/.idea
+*.idea
+*.iml
+*.mf
+out
+gen
+
+# eclipse project files
+*.settings
+*.project
+*.classpath
+/*/bin
+/passenger-transfer/.idea
+/*/overlays/
+passenger-api-impl/src/test/java/com/jd/lifetravel/passenger/test/traveller/dao/
+passenger-demo/src/test/
+passenger-transfer/src/test/java/
+/man-end-web/src/main/webapp/dist/
