@@ -1,6 +1,6 @@
 /**
  * @copyright: Copyright (c) travel.jd.com All Rights Reserved
- * @file: LAbstractRefreshableConfigApplicationContext.java project: lee-spirng
+ * @file: AbstractRefreshableConfigApplicationContext.java project: lee-spirng
  * @creator: liyong18
  * @date: 2018/7/27
  */
@@ -13,5 +13,5 @@ package lee.springframework.context.support;
  * @createdate: 2018-07-27 15:02
  * @lastdate:
  */
-public class LAbstractRefreshableConfigApplicationContext {
+public class AbstractRefreshableConfigApplicationContext {
 }

@@ -8,6 +8,9 @@
 package lee.springframework.util;
 
 
+import java.util.Collection;
+import java.util.Map;
+
 /**
  * Assertion utility class that assists in validating arguments.
  *
@@ -138,6 +141,7 @@ public abstract class Assert {
    * <pre class="code">Assert.hasLength(name, "Name must not be empty");</pre>
    * @param text the String to check
    * @param message the exception message to use if the assertion fails
+   * @see StringUtils#hasLength
    * @throws IllegalArgumentException if the text is empty
    */
   public static void hasLength(String text, String message) {
@@ -251,12 +255,51 @@ public abstract class Assert {
     noNullElements(array, "[Assertion failed] - this array must not contain any null elements");
   }
 
+  /**
+   * Assert that a collection contains elements; that is, it must not be
+   * {@code null} and must contain at least one element.
+   * <pre class="code">Assert.notEmpty(collection, "Collection must contain elements");</pre>
+   * @param collection the collection to check
+   * @param message the exception message to use if the assertion fails
+   * @throws IllegalArgumentException if the collection is {@code null} or
+   * contains no elements
+   */
+  public static void notEmpty(Collection<?> collection, String message) {
+    if (CollectionUtils.isEmpty(collection)) {
+      throw new IllegalArgumentException(message);
+    }
+  }
 
+  /**
+   * @deprecated as of 4.3.7, in favor of {@link #notEmpty(Collection, String)}
+   */
+  @Deprecated
+  public static void notEmpty(Collection<?> collection) {
+    notEmpty(collection,
+            "[Assertion failed] - this collection must not be empty: it must contain at least 1 element");
+  }
 
+  /**
+   * Assert that a Map contains entries; that is, it must not be {@code null}
+   * and must contain at least one entry.
+   * <pre class="code">Assert.notEmpty(map, "Map must contain entries");</pre>
+   * @param map the map to check
+   * @param message the exception message to use if the assertion fails
+   * @throws IllegalArgumentException if the map is {@code null} or contains no entries
+   */
+  public static void notEmpty(Map<?, ?> map, String message) {
+    if (CollectionUtils.isEmpty(map)) {
+      throw new IllegalArgumentException(message);
+    }
+  }
 
-
-
-
+  /**
+   * @deprecated as of 4.3.7, in favor of {@link #notEmpty(Map, String)}
+   */
+  @Deprecated
+  public static void notEmpty(Map<?, ?> map) {
+    notEmpty(map, "[Assertion failed] - this map must not be empty; it must contain at least one entry");
+  }
 
   /**
    * Assert that the provided object is an instance of the provided class.

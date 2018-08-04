@@ -7,7 +7,9 @@
 
 package lee.springframework.core.annotation;
 
+import lee.springframework.core.BridgeMethodResolver;
 import lee.springframework.util.Assert;
+import lee.springframework.util.LinkedMultiValueMap;
 import lee.springframework.util.MultiValueMap;
 
 import java.lang.annotation.Annotation;
@@ -16,10 +18,67 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * @description:
- * @author: liyong18
- * @createdate: 2018-07-31 21:18
- * @lastdate:
+ * General utility methods for finding annotations, meta-annotations, and
+ * repeatable annotations on {@link AnnotatedElement AnnotatedElements}.
+ * 在被注解的元素寻找注解，源注解，可重复的注解的工具方法
+ * <p>{@code AnnotatedElementUtils} defines the public API for Spring's
+ * meta-annotation programming model with support for <em>annotation attribute
+ * overrides</em>. If you do not need support for annotation attribute
+ * overrides, consider using {@link AnnotationUtils} instead.
+ *
+ * <p>Note that the features of this class are not provided by the JDK's
+ * introspection facilities themselves.
+ * 这些特性jdk没有提供
+ * <h3>Annotation Attribute Overrides</h3>
+ * <p>Support for meta-annotations with <em>attribute overrides</em> in
+ * <em>composed annotations</em> is provided by all variants of the
+ * {@code getMergedAnnotationAttributes()}, {@code getMergedAnnotation()},
+ * {@code getAllMergedAnnotations()}, {@code getMergedRepeatableAnnotations()},
+ * {@code findMergedAnnotationAttributes()}, {@code findMergedAnnotation()},
+ * {@code findAllMergedAnnotations()}, and {@code findMergedRepeatableAnnotations()}
+ * methods.
+ *
+ * <h3>Find vs. Get Semantics</h3>
+ * <p>The search algorithms used by methods in this class follow either
+ * <em>find</em> or <em>get</em> semantics. Consult the javadocs for each
+ * individual method for details on which search algorithm is used.
+ *
+ * <p><strong>Get semantics</strong> are limited to searching for annotations
+ * that are either <em>present</em> on an {@code AnnotatedElement} (i.e.,
+ * declared locally or {@linkplain java.lang.annotation.Inherited inherited})
+ * or declared within the annotation hierarchy <em>above</em> the
+ * {@code AnnotatedElement}.
+ *
+ * <p><strong>Find semantics</strong> are much more exhaustive, providing
+ * <em>get semantics</em> plus support for the following:
+ *
+ * <ul>
+ * <li>Searching on interfaces, if the annotated element is a class
+ * <li>Searching on superclasses, if the annotated element is a class
+ * <li>Resolving bridged methods, if the annotated element is a method
+ * <li>Searching on methods in interfaces, if the annotated element is a method
+ * <li>Searching on methods in superclasses, if the annotated element is a method
+ * </ul>
+ *
+ * <h3>Support for {@code @Inherited}</h3>
+ * <p>Methods following <em>get semantics</em> will honor the contract of
+ * Java's {@link java.lang.annotation.Inherited @Inherited} annotation except
+ * that locally declared annotations (including custom composed annotations)
+ * will be favored over inherited annotations. In contrast, methods following
+ * <em>find semantics</em> will completely ignore the presence of
+ * {@code @Inherited} since the <em>find</em> search algorithm manually
+ * traverses type and method hierarchies and thereby implicitly supports
+ * annotation inheritance without the need for {@code @Inherited}.
+ * AnnotatedElementUtils被注解元素的工具
+ *
+ * @author Phillip Webb
+ * @author Juergen Hoeller
+ * @author Sam Brannen
+ * @see AliasFor
+ * @see AnnotationAttributes
+ * @see AnnotationUtils
+ * @see BridgeMethodResolver
+ * @since 4.0
  */
 public class AnnotatedElementUtils {
 
@@ -36,6 +95,7 @@ public class AnnotatedElementUtils {
   /**
    * Build an adapted {@link AnnotatedElement} for the given annotations,
    * typically for use with other methods on {@link AnnotatedElementUtils}.
+   *
    * @param annotations the annotations to expose through the {@code AnnotatedElement}
    * @since 4.3
    */
@@ -51,10 +111,12 @@ public class AnnotatedElementUtils {
         }
         return null;
       }
+
       @Override
       public Annotation[] getAnnotations() {
         return annotations;
       }
+
       @Override
       public Annotation[] getDeclaredAnnotations() {
         return annotations;
@@ -68,13 +130,14 @@ public class AnnotatedElementUtils {
    * on the supplied {@link AnnotatedElement}.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type on which to find meta-annotations
    * @return the names of all meta-annotations present on the annotation,
    * or {@code null} if not found
-   * @since 4.2
    * @see #getMetaAnnotationTypes(AnnotatedElement, String)
    * @see #hasMetaAnnotationTypes
+   * @since 4.2
    */
   public static Set<String> getMetaAnnotationTypes(AnnotatedElement element, Class<? extends Annotation> annotationType) {
     Assert.notNull(element, "AnnotatedElement must not be null");
@@ -89,9 +152,10 @@ public class AnnotatedElementUtils {
    * {@code annotationName}) on the supplied {@link AnnotatedElement}.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationName the fully qualified class name of the annotation
-   * type on which to find meta-annotations
+   *                       type on which to find meta-annotations
    * @return the names of all meta-annotations present on the annotation,
    * or {@code null} if not found
    * @see #getMetaAnnotationTypes(AnnotatedElement, Class)
@@ -119,8 +183,7 @@ public class AnnotatedElementUtils {
         }
       }, new HashSet<AnnotatedElement>(), 1);
       return (!types.isEmpty() ? types : null);
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
       AnnotationUtils.rethrowAnnotationConfigurationException(ex);
       throw new IllegalStateException("Failed to introspect annotations on " + element, ex);
     }
@@ -132,11 +195,12 @@ public class AnnotatedElementUtils {
    * annotation of the specified {@code annotationType}.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the meta-annotation type to find
    * @return {@code true} if a matching meta-annotation is present
-   * @since 4.2.3
    * @see #getMetaAnnotationTypes
+   * @since 4.2.3
    */
   public static boolean hasMetaAnnotationTypes(AnnotatedElement element, Class<? extends Annotation> annotationType) {
     Assert.notNull(element, "AnnotatedElement must not be null");
@@ -151,9 +215,10 @@ public class AnnotatedElementUtils {
    * of the specified {@code annotationName}.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationName the fully qualified class name of the
-   * meta-annotation type to find
+   *                       meta-annotation type to find
    * @return {@code true} if a matching meta-annotation is present
    * @see #getMetaAnnotationTypes
    */
@@ -185,11 +250,12 @@ public class AnnotatedElementUtils {
    * will return a non-null value.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @return {@code true} if a matching annotation is present
-   * @since 4.2.3
    * @see #hasAnnotation(AnnotatedElement, Class)
+   * @since 4.2.3
    */
   public static boolean isAnnotated(AnnotatedElement element, Class<? extends Annotation> annotationType) {
     Assert.notNull(element, "AnnotatedElement must not be null");
@@ -211,7 +277,8 @@ public class AnnotatedElementUtils {
    * will return a non-null value.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationName the fully qualified class name of the annotation type to find
    * @return {@code true} if a matching annotation is present
    */
@@ -248,14 +315,15 @@ public class AnnotatedElementUtils {
    * <p>{@link AliasFor @AliasFor} semantics are fully supported, both
    * within a single annotation and within the annotation hierarchy.
    * <p>This method delegates to {@link #getMergedAnnotationAttributes(AnnotatedElement, String)}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @return the merged {@code AnnotationAttributes}, or {@code null} if not found
-   * @since 4.2
    * @see #getMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
    * @see #findMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
    * @see #getMergedAnnotation(AnnotatedElement, Class)
    * @see #findMergedAnnotation(AnnotatedElement, Class)
+   * @since 4.2
    */
   public static AnnotationAttributes getMergedAnnotationAttributes(
           AnnotatedElement element, Class<? extends Annotation> annotationType) {
@@ -276,14 +344,15 @@ public class AnnotatedElementUtils {
    * within a single annotation and within the annotation hierarchy.
    * <p>This method delegates to {@link #getMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)},
    * supplying {@code false} for {@code classValuesAsString} and {@code nestedAnnotationsAsMap}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationName the fully qualified class name of the annotation type to find
    * @return the merged {@code AnnotationAttributes}, or {@code null} if not found
-   * @since 4.2
    * @see #getMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
    * @see #findMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #getAllAnnotationAttributes(AnnotatedElement, String)
+   * @since 4.2
    */
   public static AnnotationAttributes getMergedAnnotationAttributes(AnnotatedElement element, String annotationName) {
     return getMergedAnnotationAttributes(element, annotationName, false, false);
@@ -303,17 +372,18 @@ public class AnnotatedElementUtils {
    * additional annotations of the specified {@code annotationName} will be ignored.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
-   * @param annotationName the fully qualified class name of the annotation type to find
-   * @param classValuesAsString whether to convert Class references into Strings or to
-   * preserve them as Class references
+   *
+   * @param element                the annotated element
+   * @param annotationName         the fully qualified class name of the annotation type to find
+   * @param classValuesAsString    whether to convert Class references into Strings or to
+   *                               preserve them as Class references
    * @param nestedAnnotationsAsMap whether to convert nested Annotation instances
-   * into {@code AnnotationAttributes} maps or to preserve them as Annotation instances
+   *                               into {@code AnnotationAttributes} maps or to preserve them as Annotation instances
    * @return the merged {@code AnnotationAttributes}, or {@code null} if not found
-   * @since 4.2
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #findMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
    * @see #getAllAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
+   * @since 4.2
    */
   public static AnnotationAttributes getMergedAnnotationAttributes(AnnotatedElement element,
                                                                    String annotationName, boolean classValuesAsString, boolean nestedAnnotationsAsMap) {
@@ -335,13 +405,14 @@ public class AnnotatedElementUtils {
    * within a single annotation and within the annotation hierarchy.
    * <p>This method delegates to {@link #getMergedAnnotationAttributes(AnnotatedElement, Class)}
    * and {@link AnnotationUtils#synthesizeAnnotation(Map, Class, AnnotatedElement)}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @return the merged, synthesized {@code Annotation}, or {@code null} if not found
-   * @since 4.2
    * @see #getMergedAnnotationAttributes(AnnotatedElement, Class)
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see AnnotationUtils#synthesizeAnnotation(Map, Class, AnnotatedElement)
+   * @since 4.2
    */
   public static <A extends Annotation> A getMergedAnnotation(AnnotatedElement element, Class<A> annotationType) {
     Assert.notNull(annotationType, "'annotationType' must not be null");
@@ -372,14 +443,15 @@ public class AnnotatedElementUtils {
    * single annotation and within annotation hierarchies.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element (never {@code null})
+   *
+   * @param element        the annotated element (never {@code null})
    * @param annotationType the annotation type to find (never {@code null})
    * @return the set of all merged, synthesized {@code Annotations} found,
    * or an empty set if none were found
-   * @since 4.3
    * @see #getMergedAnnotation(AnnotatedElement, Class)
    * @see #getAllAnnotationAttributes(AnnotatedElement, String)
    * @see #findAllMergedAnnotations(AnnotatedElement, Class)
+   * @since 4.3
    */
   public static <A extends Annotation> Set<A> getAllMergedAnnotations(AnnotatedElement element,
                                                                       Class<A> annotationType) {
@@ -405,16 +477,17 @@ public class AnnotatedElementUtils {
    * single annotation and within annotation hierarchies.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element (never {@code null})
+   *
+   * @param element        the annotated element (never {@code null})
    * @param annotationType the annotation type to find (never {@code null})
    * @return the set of all merged repeatable {@code Annotations} found,
    * or an empty set if none were found
-   * @since 4.3
+   * @throws IllegalArgumentException if the {@code element} or {@code annotationType}
+   *                                  is {@code null}, or if the container type cannot be resolved
    * @see #getMergedAnnotation(AnnotatedElement, Class)
    * @see #getAllMergedAnnotations(AnnotatedElement, Class)
    * @see #getMergedRepeatableAnnotations(AnnotatedElement, Class, Class)
-   * @throws IllegalArgumentException if the {@code element} or {@code annotationType}
-   * is {@code null}, or if the container type cannot be resolved
+   * @since 4.3
    */
   public static <A extends Annotation> Set<A> getMergedRepeatableAnnotations(AnnotatedElement element,
                                                                              Class<A> annotationType) {
@@ -433,20 +506,21 @@ public class AnnotatedElementUtils {
    * single annotation and within annotation hierarchies.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element (never {@code null})
+   *
+   * @param element        the annotated element (never {@code null})
    * @param annotationType the annotation type to find (never {@code null})
-   * @param containerType the type of the container that holds the annotations;
-   * may be {@code null} if the container type should be looked up via
-   * {@link java.lang.annotation.Repeatable}
+   * @param containerType  the type of the container that holds the annotations;
+   *                       may be {@code null} if the container type should be looked up via
+   *                       {@link java.lang.annotation.Repeatable}
    * @return the set of all merged repeatable {@code Annotations} found,
    * or an empty set if none were found
-   * @since 4.3
+   * @throws IllegalArgumentException         if the {@code element} or {@code annotationType}
+   *                                          is {@code null}, or if the container type cannot be resolved
+   * @throws AnnotationConfigurationException if the supplied {@code containerType}
+   *                                          is not a valid container annotation for the supplied {@code annotationType}
    * @see #getMergedAnnotation(AnnotatedElement, Class)
    * @see #getAllMergedAnnotations(AnnotatedElement, Class)
-   * @throws IllegalArgumentException if the {@code element} or {@code annotationType}
-   * is {@code null}, or if the container type cannot be resolved
-   * @throws AnnotationConfigurationException if the supplied {@code containerType}
-   * is not a valid container annotation for the supplied {@code annotationType}
+   * @since 4.3
    */
   public static <A extends Annotation> Set<A> getMergedRepeatableAnnotations(AnnotatedElement element,
                                                                              Class<A> annotationType, Class<? extends Annotation> containerType) {
@@ -456,8 +530,7 @@ public class AnnotatedElementUtils {
 
     if (containerType == null) {
       containerType = resolveContainerType(annotationType);
-    }
-    else {
+    } else {
       validateContainerType(annotationType, containerType);
     }
 
@@ -474,7 +547,8 @@ public class AnnotatedElementUtils {
    * this method does <em>not</em> support attribute overrides.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationName the fully qualified class name of the annotation type to find
    * @return a {@link MultiValueMap} keyed by attribute name, containing the annotation
    * attributes from all annotations found, or {@code null} if not found
@@ -493,12 +567,13 @@ public class AnnotatedElementUtils {
    * this method does <em>not</em> support attribute overrides.
    * <p>This method follows <em>get semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
-   * @param annotationName the fully qualified class name of the annotation type to find
-   * @param classValuesAsString whether to convert Class references into Strings or to
-   * preserve them as Class references
+   *
+   * @param element                the annotated element
+   * @param annotationName         the fully qualified class name of the annotation type to find
+   * @param classValuesAsString    whether to convert Class references into Strings or to
+   *                               preserve them as Class references
    * @param nestedAnnotationsAsMap whether to convert nested Annotation instances into
-   * {@code AnnotationAttributes} maps or to preserve them as Annotation instances
+   *                               {@code AnnotationAttributes} maps or to preserve them as Annotation instances
    * @return a {@link MultiValueMap} keyed by attribute name, containing the annotation
    * attributes from all annotations found, or {@code null} if not found
    */
@@ -530,11 +605,12 @@ public class AnnotatedElementUtils {
    * will return a non-null value.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @return {@code true} if a matching annotation is present
-   * @since 4.3
    * @see #isAnnotated(AnnotatedElement, Class)
+   * @since 4.3
    */
   public static boolean hasAnnotation(AnnotatedElement element, Class<? extends Annotation> annotationType) {
     Assert.notNull(element, "AnnotatedElement must not be null");
@@ -564,18 +640,19 @@ public class AnnotatedElementUtils {
    * annotations of the specified {@code annotationType} will be ignored.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
-   * @param annotationType the annotation type to find
-   * @param classValuesAsString whether to convert Class references into
-   * Strings or to preserve them as Class references
+   *
+   * @param element                the annotated element
+   * @param annotationType         the annotation type to find
+   * @param classValuesAsString    whether to convert Class references into
+   *                               Strings or to preserve them as Class references
    * @param nestedAnnotationsAsMap whether to convert nested Annotation
-   * instances into {@code AnnotationAttributes} maps or to preserve them
-   * as Annotation instances
+   *                               instances into {@code AnnotationAttributes} maps or to preserve them
+   *                               as Annotation instances
    * @return the merged {@code AnnotationAttributes}, or {@code null} if
    * not found
-   * @since 4.2
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #getMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
+   * @since 4.2
    */
   public static AnnotationAttributes findMergedAnnotationAttributes(AnnotatedElement element,
                                                                     Class<? extends Annotation> annotationType, boolean classValuesAsString, boolean nestedAnnotationsAsMap) {
@@ -602,16 +679,17 @@ public class AnnotatedElementUtils {
    * annotations of the specified {@code annotationName} will be ignored.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
-   * @param annotationName the fully qualified class name of the annotation type to find
-   * @param classValuesAsString whether to convert Class references into Strings or to
-   * preserve them as Class references
+   *
+   * @param element                the annotated element
+   * @param annotationName         the fully qualified class name of the annotation type to find
+   * @param classValuesAsString    whether to convert Class references into Strings or to
+   *                               preserve them as Class references
    * @param nestedAnnotationsAsMap whether to convert nested Annotation instances into
-   * {@code AnnotationAttributes} maps or to preserve them as Annotation instances
+   *                               {@code AnnotationAttributes} maps or to preserve them as Annotation instances
    * @return the merged {@code AnnotationAttributes}, or {@code null} if not found
-   * @since 4.2
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #getMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
+   * @since 4.2
    */
   public static AnnotationAttributes findMergedAnnotationAttributes(AnnotatedElement element,
                                                                     String annotationName, boolean classValuesAsString, boolean nestedAnnotationsAsMap) {
@@ -632,13 +710,14 @@ public class AnnotatedElementUtils {
    * within a single annotation and within the annotation hierarchy.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @return the merged, synthesized {@code Annotation}, or {@code null} if not found
-   * @since 4.2
    * @see #findAllMergedAnnotations(AnnotatedElement, Class)
    * @see #findMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
    * @see #getMergedAnnotationAttributes(AnnotatedElement, Class)
+   * @since 4.2
    */
   public static <A extends Annotation> A findMergedAnnotation(AnnotatedElement element, Class<A> annotationType) {
     Assert.notNull(annotationType, "'annotationType' must not be null");
@@ -671,13 +750,14 @@ public class AnnotatedElementUtils {
    * and {@link AnnotationUtils#synthesizeAnnotation(Map, Class, AnnotatedElement)}.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationName the fully qualified class name of the annotation type to find
    * @return the merged, synthesized {@code Annotation}, or {@code null} if not found
-   * @since 4.2
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #findMergedAnnotationAttributes(AnnotatedElement, String, boolean, boolean)
    * @see AnnotationUtils#synthesizeAnnotation(Map, Class, AnnotatedElement)
+   * @since 4.2
    * @deprecated As of Spring Framework 4.2.3, use {@link #findMergedAnnotation(AnnotatedElement, Class)} instead.
    */
   @Deprecated
@@ -698,13 +778,14 @@ public class AnnotatedElementUtils {
    * single annotation and within annotation hierarchies.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element (never {@code null})
+   *
+   * @param element        the annotated element (never {@code null})
    * @param annotationType the annotation type to find (never {@code null})
    * @return the set of all merged, synthesized {@code Annotations} found,
    * or an empty set if none were found
-   * @since 4.3
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #getAllMergedAnnotations(AnnotatedElement, Class)
+   * @since 4.3
    */
   public static <A extends Annotation> Set<A> findAllMergedAnnotations(AnnotatedElement element,
                                                                        Class<A> annotationType) {
@@ -730,16 +811,17 @@ public class AnnotatedElementUtils {
    * single annotation and within annotation hierarchies.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element (never {@code null})
+   *
+   * @param element        the annotated element (never {@code null})
    * @param annotationType the annotation type to find (never {@code null})
    * @return the set of all merged repeatable {@code Annotations} found,
    * or an empty set if none were found
-   * @since 4.3
+   * @throws IllegalArgumentException if the {@code element} or {@code annotationType}
+   *                                  is {@code null}, or if the container type cannot be resolved
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #findAllMergedAnnotations(AnnotatedElement, Class)
    * @see #findMergedRepeatableAnnotations(AnnotatedElement, Class, Class)
-   * @throws IllegalArgumentException if the {@code element} or {@code annotationType}
-   * is {@code null}, or if the container type cannot be resolved
+   * @since 4.3
    */
   public static <A extends Annotation> Set<A> findMergedRepeatableAnnotations(AnnotatedElement element,
                                                                               Class<A> annotationType) {
@@ -758,20 +840,21 @@ public class AnnotatedElementUtils {
    * single annotation and within annotation hierarchies.
    * <p>This method follows <em>find semantics</em> as described in the
    * {@linkplain AnnotatedElementUtils class-level javadoc}.
-   * @param element the annotated element (never {@code null})
+   *
+   * @param element        the annotated element (never {@code null})
    * @param annotationType the annotation type to find (never {@code null})
-   * @param containerType the type of the container that holds the annotations;
-   * may be {@code null} if the container type should be looked up via
-   * {@link java.lang.annotation.Repeatable}
+   * @param containerType  the type of the container that holds the annotations;
+   *                       may be {@code null} if the container type should be looked up via
+   *                       {@link java.lang.annotation.Repeatable}
    * @return the set of all merged repeatable {@code Annotations} found,
    * or an empty set if none were found
-   * @since 4.3
+   * @throws IllegalArgumentException         if the {@code element} or {@code annotationType}
+   *                                          is {@code null}, or if the container type cannot be resolved
+   * @throws AnnotationConfigurationException if the supplied {@code containerType}
+   *                                          is not a valid container annotation for the supplied {@code annotationType}
    * @see #findMergedAnnotation(AnnotatedElement, Class)
    * @see #findAllMergedAnnotations(AnnotatedElement, Class)
-   * @throws IllegalArgumentException if the {@code element} or {@code annotationType}
-   * is {@code null}, or if the container type cannot be resolved
-   * @throws AnnotationConfigurationException if the supplied {@code containerType}
-   * is not a valid container annotation for the supplied {@code annotationType}
+   * @since 4.3
    */
   public static <A extends Annotation> Set<A> findMergedRepeatableAnnotations(AnnotatedElement element,
                                                                               Class<A> annotationType, Class<? extends Annotation> containerType) {
@@ -781,8 +864,7 @@ public class AnnotatedElementUtils {
 
     if (containerType == null) {
       containerType = resolveContainerType(annotationType);
-    }
-    else {
+    } else {
       validateContainerType(annotationType, containerType);
     }
 
@@ -795,11 +877,12 @@ public class AnnotatedElementUtils {
    * Search for annotations of the specified {@code annotationName} or
    * {@code annotationType} on the specified {@code element}, following
    * <em>get semantics</em>.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @param annotationName the fully qualified class name of the annotation
-   * type to find (as an alternative to {@code annotationType})
-   * @param processor the processor to delegate to
+   *                       type to find (as an alternative to {@code annotationType})
+   * @param processor      the processor to delegate to
    * @return the result of the processor, potentially {@code null}
    */
   private static <T> T searchWithGetSemantics(AnnotatedElement element, Class<? extends Annotation> annotationType,
@@ -812,13 +895,14 @@ public class AnnotatedElementUtils {
    * Search for annotations of the specified {@code annotationName} or
    * {@code annotationType} on the specified {@code element}, following
    * <em>get semantics</em>.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @param annotationName the fully qualified class name of the annotation
-   * type to find (as an alternative to {@code annotationType})
-   * @param containerType the type of the container that holds repeatable
-   * annotations, or {@code null} if the annotation is not repeatable
-   * @param processor the processor to delegate to
+   *                       type to find (as an alternative to {@code annotationType})
+   * @param containerType  the type of the container that holds repeatable
+   *                       annotations, or {@code null} if the annotation is not repeatable
+   * @param processor      the processor to delegate to
    * @return the result of the processor, potentially {@code null}
    * @since 4.3
    */
@@ -828,8 +912,7 @@ public class AnnotatedElementUtils {
     try {
       return searchWithGetSemantics(element, annotationType, annotationName, containerType, processor,
               new HashSet<AnnotatedElement>(), 0);
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
       AnnotationUtils.rethrowAnnotationConfigurationException(ex);
       throw new IllegalStateException("Failed to introspect annotations on " + element, ex);
     }
@@ -841,15 +924,16 @@ public class AnnotatedElementUtils {
    * have already been <em>visited</em>.
    * <p>The {@code metaDepth} parameter is explained in the
    * {@link Processor#process process()} method of the {@link Processor} API.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @param annotationName the fully qualified class name of the annotation
-   * type to find (as an alternative to {@code annotationType})
-   * @param containerType the type of the container that holds repeatable
-   * annotations, or {@code null} if the annotation is not repeatable
-   * @param processor the processor to delegate to
-   * @param visited the set of annotated elements that have already been visited
-   * @param metaDepth the meta-depth of the annotation
+   *                       type to find (as an alternative to {@code annotationType})
+   * @param containerType  the type of the container that holds repeatable
+   *                       annotations, or {@code null} if the annotation is not repeatable
+   * @param processor      the processor to delegate to
+   * @param visited        the set of annotated elements that have already been visited
+   * @param metaDepth      the meta-depth of the annotation
    * @return the result of the processor, potentially {@code null}
    */
   private static <T> T searchWithGetSemantics(AnnotatedElement element, Class<? extends Annotation> annotationType,
@@ -883,8 +967,7 @@ public class AnnotatedElementUtils {
             return result;
           }
         }
-      }
-      catch (Throwable ex) {
+      } catch (Throwable ex) {
         AnnotationUtils.handleIntrospectionFailure(element, ex);
       }
     }
@@ -900,17 +983,18 @@ public class AnnotatedElementUtils {
    * local annotations to take precedence over inherited annotations.
    * <p>The {@code metaDepth} parameter is explained in the
    * {@link Processor#process process()} method of the {@link Processor} API.
-   * @param element the element that is annotated with the supplied
-   * annotations, used for contextual logging; may be {@code null} if unknown
-   * @param annotations the annotations to search in
+   *
+   * @param element        the element that is annotated with the supplied
+   *                       annotations, used for contextual logging; may be {@code null} if unknown
+   * @param annotations    the annotations to search in
    * @param annotationType the annotation type to find
    * @param annotationName the fully qualified class name of the annotation
-   * type to find (as an alternative to {@code annotationType})
-   * @param containerType the type of the container that holds repeatable
-   * annotations, or {@code null} if the annotation is not repeatable
-   * @param processor the processor to delegate to
-   * @param visited the set of annotated elements that have already been visited
-   * @param metaDepth the meta-depth of the annotation
+   *                       type to find (as an alternative to {@code annotationType})
+   * @param containerType  the type of the container that holds repeatable
+   *                       annotations, or {@code null} if the annotation is not repeatable
+   * @param processor      the processor to delegate to
+   * @param visited        the set of annotated elements that have already been visited
+   * @param metaDepth      the meta-depth of the annotation
    * @return the result of the processor, potentially {@code null}
    * @since 4.2
    */
@@ -930,8 +1014,7 @@ public class AnnotatedElementUtils {
           if (result != null) {
             if (processor.aggregates() && metaDepth == 0) {
               processor.getAggregatedResults().add(result);
-            }
-            else {
+            } else {
               return result;
             }
           }
@@ -960,8 +1043,7 @@ public class AnnotatedElementUtils {
           processor.postProcess(element, annotation, result);
           if (processor.aggregates() && metaDepth == 0) {
             processor.getAggregatedResults().add(result);
-          }
-          else {
+          } else {
             return result;
           }
         }
@@ -975,11 +1057,12 @@ public class AnnotatedElementUtils {
    * Search for annotations of the specified {@code annotationName} or
    * {@code annotationType} on the specified {@code element}, following
    * <em>find semantics</em>.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @param annotationName the fully qualified class name of the annotation
-   * type to find (as an alternative to {@code annotationType})
-   * @param processor the processor to delegate to
+   *                       type to find (as an alternative to {@code annotationType})
+   * @param processor      the processor to delegate to
    * @return the result of the processor, potentially {@code null}
    * @since 4.2
    */
@@ -993,13 +1076,14 @@ public class AnnotatedElementUtils {
    * Search for annotations of the specified {@code annotationName} or
    * {@code annotationType} on the specified {@code element}, following
    * <em>find semantics</em>.
-   * @param element the annotated element
+   *
+   * @param element        the annotated element
    * @param annotationType the annotation type to find
    * @param annotationName the fully qualified class name of the annotation
-   * type to find (as an alternative to {@code annotationType})
-   * @param containerType the type of the container that holds repeatable
-   * annotations, or {@code null} if the annotation is not repeatable
-   * @param processor the processor to delegate to
+   *                       type to find (as an alternative to {@code annotationType})
+   * @param containerType  the type of the container that holds repeatable
+   *                       annotations, or {@code null} if the annotation is not repeatable
+   * @param processor      the processor to delegate to
    * @return the result of the processor, potentially {@code null}
    * @since 4.3
    */
@@ -1014,8 +1098,7 @@ public class AnnotatedElementUtils {
     try {
       return searchWithFindSemantics(
               element, annotationType, annotationName, containerType, processor, new HashSet<AnnotatedElement>(), 0);
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
       AnnotationUtils.rethrowAnnotationConfigurationException(ex);
       throw new IllegalStateException("Failed to introspect annotations on " + element, ex);
     }
@@ -1027,15 +1110,16 @@ public class AnnotatedElementUtils {
    * have already been <em>visited</em>.
    * <p>The {@code metaDepth} parameter is explained in the
    * {@link Processor#process process()} method of the {@link Processor} API.
-   * @param element the annotated element (never {@code null})
+   *
+   * @param element        the annotated element (never {@code null})
    * @param annotationType the annotation type to find
    * @param annotationName the fully qualified class name of the annotation
-   * type to find (as an alternative to {@code annotationType})
-   * @param containerType the type of the container that holds repeatable
-   * annotations, or {@code null} if the annotation is not repeatable
-   * @param processor the processor to delegate to
-   * @param visited the set of annotated elements that have already been visited
-   * @param metaDepth the meta-depth of the annotation
+   *                       type to find (as an alternative to {@code annotationType})
+   * @param containerType  the type of the container that holds repeatable
+   *                       annotations, or {@code null} if the annotation is not repeatable
+   * @param processor      the processor to delegate to
+   * @param visited        the set of annotated elements that have already been visited
+   * @param metaDepth      the meta-depth of the annotation
    * @return the result of the processor, potentially {@code null}
    * @since 4.2
    */
@@ -1062,8 +1146,7 @@ public class AnnotatedElementUtils {
               if (result != null) {
                 if (processor.aggregates() && metaDepth == 0) {
                   aggregatedResults.add(result);
-                }
-                else {
+                } else {
                   return result;
                 }
               }
@@ -1092,8 +1175,7 @@ public class AnnotatedElementUtils {
               processor.postProcess(currentAnnotationType, annotation, result);
               if (processor.aggregates() && metaDepth == 0) {
                 aggregatedResults.add(result);
-              }
-              else {
+              } else {
                 return result;
               }
             }
@@ -1140,8 +1222,7 @@ public class AnnotatedElementUtils {
               if (result != null) {
                 return result;
               }
-            }
-            catch (NoSuchMethodException ex) {
+            } catch (NoSuchMethodException ex) {
               // No equivalent method found
             }
 
@@ -1152,8 +1233,7 @@ public class AnnotatedElementUtils {
               return result;
             }
           }
-        }
-        else if (element instanceof Class) {
+        } else if (element instanceof Class) {
           Class<?> clazz = (Class<?>) element;
 
           // Search on interfaces
@@ -1175,8 +1255,7 @@ public class AnnotatedElementUtils {
             }
           }
         }
-      }
-      catch (Throwable ex) {
+      } catch (Throwable ex) {
         AnnotationUtils.handleIntrospectionFailure(element, ex);
       }
     }
@@ -1196,8 +1275,7 @@ public class AnnotatedElementUtils {
           if (result != null) {
             return result;
           }
-        }
-        catch (NoSuchMethodException ex) {
+        } catch (NoSuchMethodException ex) {
           // Skip this interface - it doesn't have the method...
         }
       }
@@ -1209,6 +1287,7 @@ public class AnnotatedElementUtils {
   /**
    * Get the array of raw (unsynthesized) annotations from the {@code value}
    * attribute of the supplied repeatable annotation {@code container}.
+   *
    * @since 4.3
    */
   @SuppressWarnings("unchecked")
@@ -1217,8 +1296,7 @@ public class AnnotatedElementUtils {
 
     try {
       return (A[]) AnnotationUtils.getValue(container);
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
       AnnotationUtils.handleIntrospectionFailure(element, ex);
     }
     // Unable to read value from repeating annotation container -> ignore it.
@@ -1228,6 +1306,7 @@ public class AnnotatedElementUtils {
   /**
    * Resolve the container type for the supplied repeatable {@code annotationType}.
    * <p>Delegates to {@link AnnotationUtils#resolveContainerAnnotationType(Class)}.
+   *
    * @param annotationType the annotation type to resolve the container for
    * @return the container type (never {@code null})
    * @throws IllegalArgumentException if the container type cannot be resolved
@@ -1248,9 +1327,10 @@ public class AnnotatedElementUtils {
    * annotation for the supplied repeatable {@code annotationType} (i.e.,
    * that it declares a {@code value} attribute that holds an array of the
    * {@code annotationType}).
-   * @since 4.3
+   *
    * @throws AnnotationConfigurationException if the supplied {@code containerType}
-   * is not a valid container annotation for the supplied {@code annotationType}
+   *                                          is not a valid container annotation for the supplied {@code annotationType}
+   * @since 4.3
    */
   private static void validateContainerType(Class<? extends Annotation> annotationType,
                                             Class<? extends Annotation> containerType) {
@@ -1264,8 +1344,7 @@ public class AnnotatedElementUtils {
                 containerType.getName(), annotationType.getName());
         throw new AnnotationConfigurationException(msg);
       }
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
       AnnotationUtils.rethrowAnnotationConfigurationException(ex);
       String msg = String.format("Invalid declaration of container type [%s] for repeatable annotation [%s]",
               containerType.getName(), annotationType.getName());
@@ -1298,19 +1377,24 @@ public class AnnotatedElementUtils {
    * the search).
    * <p>Returning a non-null value from the {@link #process}
    * method instructs the search algorithm to stop searching further;
+   * process方法，返回一个非空对象停止继续搜索
    * whereas, returning {@code null} from the {@link #process} method
    * instructs the search algorithm to continue searching for additional
-   * annotations. One exception to this rule applies to processors
+   * annotations.
+   * 返回空对象，继续搜索其他注解
+   * One exception to this rule applies to processors
    * that {@linkplain #aggregates aggregate} results. If an aggregating
    * processor returns a non-null value, that value will be added to the
    * list of {@linkplain #getAggregatedResults aggregated results}
    * and the search algorithm will continue.
+   * 一个例外，聚合处理返回一个非空的值，这个值会被添加到集合，然后继续搜索
    * <p>Processors can optionally {@linkplain #postProcess post-process}
    * the result of the {@link #process} method as the search algorithm
    * goes back down the annotation hierarchy from an invocation of
    * {@link #process} that returned a non-null value down to the
    * {@link AnnotatedElement} that was supplied as the starting point to
    * the search algorithm.
+   *
    * @param <T> the type of result returned by the processor
    */
   private interface Processor<T> {
@@ -1331,11 +1415,12 @@ public class AnnotatedElementUtils {
      * <em>present</em> on a non-annotation element will have a depth
      * of 0; a meta-annotation will have a depth of 1; and a
      * meta-meta-annotation will have a depth of 2; etc.
+     *
      * @param annotatedElement the element that is annotated with the
-     * supplied annotation, used for contextual logging; may be
-     * {@code null} if unknown
-     * @param annotation the annotation to process
-     * @param metaDepth the meta-depth of the annotation
+     *                         supplied annotation, used for contextual logging; may be
+     *                         {@code null} if unknown
+     * @param annotation       the annotation to process
+     * @param metaDepth        the meta-depth of the annotation
      * @return the result of the processing, or {@code null} to continue
      * searching for additional annotations
      */
@@ -1347,17 +1432,19 @@ public class AnnotatedElementUtils {
      * that is present in the annotation hierarchy, between the initial
      * {@link AnnotatedElement} and an invocation of {@link #process}
      * that returned a non-null value.
+     *
      * @param annotatedElement the element that is annotated with the
-     * supplied annotation, used for contextual logging; may be
-     * {@code null} if unknown
-     * @param annotation the annotation to post-process
-     * @param result the result to post-process
+     *                         supplied annotation, used for contextual logging; may be
+     *                         {@code null} if unknown
+     * @param annotation       the annotation to post-process
+     * @param result           the result to post-process
      */
     void postProcess(AnnotatedElement annotatedElement, Annotation annotation, T result);
 
     /**
      * Determine if this processor always processes annotations regardless of
      * whether or not the target annotation has been found.
+     *
      * @return {@code true} if this processor always processes annotations
      * @since 4.3
      */
@@ -1367,6 +1454,7 @@ public class AnnotatedElementUtils {
      * Determine if this processor aggregates the results returned by {@link #process}.
      * <p>If this method returns {@code true}, then {@link #getAggregatedResults()}
      * must return a non-null value.
+     *
      * @return {@code true} if this processor supports aggregated results
      * @see #getAggregatedResults
      * @since 4.3
@@ -1380,6 +1468,7 @@ public class AnnotatedElementUtils {
      * responsible for asking this processor if it {@link #aggregates} results
      * and then adding the post-processed results to the list returned by this
      * method.
+     *
      * @return the list of results aggregated by this processor
      * (never {@code null} unless {@link #aggregates} returns {@code false})
      * @see #aggregates
@@ -1393,6 +1482,7 @@ public class AnnotatedElementUtils {
    * {@link Processor} that {@linkplain #process(AnnotatedElement, Annotation, int)
    * processes} annotations but does not {@linkplain #postProcess post-process} or
    * {@linkplain #aggregates aggregate} results.
+   *
    * @since 4.2
    */
   private abstract static class SimpleAnnotationProcessor<T> implements Processor<T> {
@@ -1433,6 +1523,7 @@ public class AnnotatedElementUtils {
    * {@link SimpleAnnotationProcessor} that always returns {@link Boolean#TRUE} when
    * asked to {@linkplain #process(AnnotatedElement, Annotation, int) process} an
    * annotation.
+   *
    * @since 4.3
    */
   static class AlwaysTrueBooleanAnnotationProcessor extends SimpleAnnotationProcessor<Boolean> {
@@ -1451,14 +1542,15 @@ public class AnnotatedElementUtils {
    * during the {@link #postProcess} phase.
    * <p>A {@code MergedAnnotationAttributesProcessor} may optionally be
    * configured to {@linkplain #aggregates aggregate} results.
-   * @since 4.2
+   *
    * @see AnnotationUtils#retrieveAnnotationAttributes
    * @see AnnotationUtils#postProcessAnnotationAttributes
+   * @since 4.2
    */
   private static class MergedAnnotationAttributesProcessor implements Processor<AnnotationAttributes> {
-
+    //属性的值是类转换成类
     private final boolean classValuesAsString;
-
+    //属性的值是注解，转换为map
     private final boolean nestedAnnotationsAsMap;
 
     private final boolean aggregates;
