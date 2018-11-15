@@ -45,8 +45,8 @@ public interface ConfigurableListableBeanFactory extends ListableBeanFactory, Au
 
   /**
    * Register a special dependency type with corresponding autowired value.
-   * <p>This is intended for factory/context references that are supposed
-   * to be autowirable but are not defined as beans in the factory:
+   * <p>This is intended for instantiation/context references that are supposed
+   * to be autowirable but are not defined as beans in the instantiation:
    * e.g. a dependency of type ApplicationContext resolved to the
    * ApplicationContext instance that the bean is living in.
    * <p>Note: There are no such default types registered in a plain BeanFactory,
@@ -78,22 +78,22 @@ public interface ConfigurableListableBeanFactory extends ListableBeanFactory, Au
   /**
    * Return the registered BeanDefinition for the specified bean, allowing access
    * to its property values and constructor argument value (which can be
-   * modified during bean factory post-processing).
+   * modified during bean instantiation post-processing).
    * <p>A returned BeanDefinition object should not be a copy but the original
-   * definition object as registered in the factory. This means that it should
+   * definition object as registered in the instantiation. This means that it should
    * be castable to a more specific implementation type, if necessary.
    * <p><b>NOTE:</b> This method does <i>not</i> consider ancestor factories.
-   * It is only meant for accessing local bean definitions of this factory.
+   * It is only meant for accessing local bean definitions of this instantiation.
    *
    * @param beanName the name of the bean
    * @return the registered BeanDefinition
    * @throws NoSuchBeanDefinitionException if there is no bean with the given name
-   *                                       defined in this factory
+   *                                       defined in this instantiation
    */
   BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
 
   /**
-   * Return a unified view over all bean names managed by this factory.
+   * Return a unified view over all bean names managed by this instantiation.
    * <p>Includes bean definition names as well as names of manually registered
    * singleton instances, with bean definition names consistently coming first,
    * analogous to how type/annotation specific retrieval of bean names works.
@@ -123,25 +123,25 @@ public interface ConfigurableListableBeanFactory extends ListableBeanFactory, Au
   /**
    * Freeze all bean definitions, signalling that the registered bean definitions
    * will not be modified or post-processed any further.
-   * <p>This allows the factory to aggressively cache bean definition metadata.
+   * <p>This allows the instantiation to aggressively cache bean definition metadata.
    */
   void freezeConfiguration();
 
   /**
-   * Return whether this factory's bean definitions are frozen,
+   * Return whether this instantiation's bean definitions are frozen,
    * i.e. are not supposed to be modified or post-processed any further.
    *
-   * @return {@code true} if the factory's configuration is considered frozen
+   * @return {@code true} if the instantiation's configuration is considered frozen
    */
   boolean isConfigurationFrozen();
 
   /**
    * Ensure that all non-lazy-init singletons are instantiated, also considering
    * {@link org.springframework.beans.factory.FactoryBean FactoryBeans}.
-   * Typically invoked at the end of factory setup, if desired.
+   * Typically invoked at the end of instantiation setup, if desired.
    *
    * @throws BeansException if one of the singleton beans could not be created.
-   *                        Note: This may have left the factory with some beans already initialized!
+   *                        Note: This may have left the instantiation with some beans already initialized!
    *                        Call {@link #destroySingletons()} for full cleanup in this case.
    * @see #destroySingletons()
    */

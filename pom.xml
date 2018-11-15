@@ -6,7 +6,11 @@
 
   <groupId>com.lee</groupId>
   <artifactId>spirng</artifactId>
+  <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
+  <modules>
+    <module>../se</module>
+  </modules>
 
 
 </project>

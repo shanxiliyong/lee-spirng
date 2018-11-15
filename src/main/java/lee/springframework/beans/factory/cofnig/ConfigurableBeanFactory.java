@@ -20,17 +20,17 @@ import java.security.AccessControlContext;
 /**
  * Configuration interface to be implemented by most bean factories.
  * 被工厂实现的配置接口
- * Provides facilities to configure a bean factory, in addition to the bean factory
+ * Provides facilities to configure a bean instantiation, in addition to the bean instantiation
  * client methods in the {@link org.springframework.beans.factory.BeanFactory}
  * interface.
- *  提供配置bean factory 配置设施，和调用@{link Bean}
- * <p>This bean factory interface is not meant to be used in normal application
+ *  提供配置bean instantiation 配置设施，和调用@{link Bean}
+ * <p>This bean instantiation interface is not meant to be used in normal application
  * code: Stick to {@link org.springframework.beans.factory.BeanFactory} or
  * {@link org.springframework.beans.factory.ListableBeanFactory} for typical
  * needs.
  * 这个接口不是为应用程序使用：使用xxx为典型的使用场景
  * This extended interface is just meant to allow for framework-internal
- * plug'n'play and for special access to bean factory configuration methods.
+ * plug'n'play and for special access to bean instantiation configuration methods.
  *  这个接口主要是框架使用配置工厂的配置方法
  * @author Juergen Hoeller
  * @since 03.11.2003
@@ -56,11 +56,11 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
 
   /**
-   * Set the parent of this bean factory.
+   * Set the parent of this bean instantiation.
    * <p>Note that the parent cannot be changed: It should only be set outside
-   * a constructor if it isn't available at the time of factory instantiation.
+   * a constructor if it isn't available at the time of instantiation instantiation.
    * @param parentBeanFactory the parent BeanFactory
-   * @throws IllegalStateException if this factory is already associated with
+   * @throws IllegalStateException if this instantiation is already associated with
    * a parent BeanFactory
    * @see #getParentBeanFactory()
    */
@@ -72,14 +72,14 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
    * <p>Note that this class loader will only apply to bean definitions
    * that do not carry a resolved bean class yet. This is the case as of
    * Spring 2.0 by default: Bean definitions only carry bean class names,
-   * to be resolved once the factory processes the bean definition.
+   * to be resolved once the instantiation processes the bean definition.
    * @param beanClassLoader the class loader to use,
    * or {@code null} to suggest the default class loader
    */
   void setBeanClassLoader(ClassLoader beanClassLoader);
 
   /**
-   * Return this factory's class loader for loading bean classes.
+   * Return this instantiation's class loader for loading bean classes.
    */
   ClassLoader getBeanClassLoader();
 
@@ -156,7 +156,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
   /**
    * Register the given custom property editor for all properties of the
-   * given type. To be invoked during factory configuration.
+   * given type. To be invoked during instantiation configuration.
    * <p>Note that this method will register a shared custom editor instance;
    * access to that instance will be synchronized for thread-safety. It is
    * generally preferable to use {@link #addPropertyEditorRegistrar} instead
@@ -202,7 +202,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
   /**
    * Determine whether an embedded value resolver has been registered with this
-   * bean factory, to be applied through {@link #resolveEmbeddedValue(String)}.
+   * bean instantiation, to be applied through {@link #resolveEmbeddedValue(String)}.
    * @since 4.3
    */
   boolean hasEmbeddedValueResolver();
@@ -217,7 +217,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
   /**
    * Add a new BeanPostProcessor that will get applied to beans created
-   * by this factory. To be invoked during factory configuration.
+   * by this instantiation. To be invoked during instantiation configuration.
    * <p>Note: Post-processors submitted here will be applied in the order of
    * registration; any ordering semantics expressed through implementing the
    * {@link org.springframework.core.Ordered} interface will be ignored. Note
@@ -259,16 +259,16 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
   Scope getRegisteredScope(String scopeName);
 
   /**
-   * Provides a security access control context relevant to this factory.
+   * Provides a security access control context relevant to this instantiation.
    * @return the applicable AccessControlContext (never {@code null})
    * @since 3.0
    */
   AccessControlContext getAccessControlContext();
 
   /**
-   * Copy all relevant configuration from the given other factory.
+   * Copy all relevant configuration from the given other instantiation.
    * <p>Should include all standard configuration settings as well as
-   * BeanPostProcessors, Scopes, and factory-specific internal settings.
+   * BeanPostProcessors, Scopes, and instantiation-specific internal settings.
    * Should not include any metadata of actual bean definitions,
    * such as BeanDefinition objects and bean name aliases.
    * @param otherFactory the other BeanFactory to copy from
@@ -278,8 +278,8 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
   /**
    * Given a bean name, create an alias. We typically use this method to
    * support names that are illegal within XML ids (used for bean names).
-   * <p>Typically invoked during factory configuration, but can also be
-   * used for runtime registration of aliases. Therefore, a factory
+   * <p>Typically invoked during instantiation configuration, but can also be
+   * used for runtime registration of aliases. Therefore, a instantiation
    * implementation should synchronize alias access.
    * @param beanName the canonical name of the target bean
    * @param alias the alias to be registered for the bean
@@ -289,7 +289,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
   /**
    * Resolve all alias target names and aliases registered in this
-   * factory, applying the given StringValueResolver to them.
+   * instantiation, applying the given StringValueResolver to them.
    * <p>The value resolver may for example resolve placeholders
    * in target bean names and even in alias names.
    * @param valueResolver the StringValueResolver to apply
@@ -363,7 +363,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
   /**
    * Destroy the given bean instance (usually a prototype instance
-   * obtained from this factory) according to its bean definition.
+   * obtained from this instantiation) according to its bean definition.
    * <p>Any exception that arises during destruction should be caught
    * and logged instead of propagated to the caller of this method.
    * @param beanName the name of the bean definition
@@ -380,8 +380,8 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
   void destroyScopedBean(String beanName);
 
   /**
-   * Destroy all singleton beans in this factory, including inner beans that have
-   * been registered as disposable. To be called on shutdown of a factory.
+   * Destroy all singleton beans in this instantiation, including inner beans that have
+   * been registered as disposable. To be called on shutdown of a instantiation.
    * <p>Any exception that arises during destruction should be caught
    * and logged instead of propagated to the caller of this method.
    */

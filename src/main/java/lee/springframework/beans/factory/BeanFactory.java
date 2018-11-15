@@ -51,7 +51,7 @@ public interface BeanFactory {
    * Singleton or Prototype design pattern. Callers may retain references to
    * returned objects in the case of Singleton beans.
    * <p>Translates aliases back to the corresponding canonical bean name.
-   * Will ask the parent factory if the bean cannot be found in this factory instance.
+   * Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    * 如果当前工厂找不到，则让父工厂查找
    * @param name the name of the bean to retrieve
    * @return an instance of the bean
@@ -68,7 +68,7 @@ public interface BeanFactory {
    * required type. This means that ClassCastException can't be thrown on casting
    * the result correctly, as can happen with {@link #getBean(String)}.
    * <p>Translates aliases back to the corresponding canonical bean name.
-   * Will ask the parent factory if the bean cannot be found in this factory instance.
+   * Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    *
    * @param name         the name of the bean to retrieve
    * @param requiredType type the bean must match. Can be an interface or superclass
@@ -102,7 +102,7 @@ public interface BeanFactory {
 
   /**
    * Return an instance, which may be shared or independent, of the specified bean.
-   * <p>Allows for specifying explicit constructor arguments / factory method arguments,
+   * <p>Allows for specifying explicit constructor arguments / instantiation method arguments,
    * overriding the specified default arguments (if any) in the bean definition.
    *
    * @param name the name of the bean to retrieve
@@ -119,7 +119,7 @@ public interface BeanFactory {
 
   /**
    * Return an instance, which may be shared or independent, of the specified bean.
-   * <p>Allows for specifying explicit constructor arguments / factory method arguments,
+   * <p>Allows for specifying explicit constructor arguments / instantiation method arguments,
    * overriding the specified default arguments (if any) in the bean definition.
    * <p>This method goes into {@link ListableBeanFactory} by-type lookup territory
    * but may also be translated into a conventional by-name lookup based on the name
@@ -141,12 +141,12 @@ public interface BeanFactory {
 
 
   /**
-   * Does this bean factory contain a bean definition or externally registered singleton
+   * Does this bean instantiation contain a bean definition or externally registered singleton
    * instance with the given name?
    * <p>If the given name is an alias, it will be translated back to the corresponding
    * canonical bean name.
-   * <p>If this factory is hierarchical, will ask any parent factory if the bean cannot
-   * be found in this factory instance.
+   * <p>If this instantiation is hierarchical, will ask any parent instantiation if the bean cannot
+   * be found in this instantiation instance.
    * <p>If a bean definition or singleton instance matching the given name is found,
    * this method will return {@code true} whether the named bean definition is concrete
    * or abstract, lazy or eager, in scope or not. Therefore, note that a {@code true}
@@ -166,7 +166,7 @@ public interface BeanFactory {
    * to a scoped bean as well. Use the {@link #isPrototype} operation to explicitly
    * check for independent instances.
    * <p>Translates aliases back to the corresponding canonical bean name.
-   * Will ask the parent factory if the bean cannot be found in this factory instance.
+   * Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    *
    * @param name the name of the bean to query
    * @return whether this bean corresponds to a singleton instance
@@ -184,7 +184,7 @@ public interface BeanFactory {
    * to a scoped bean as well. Use the {@link #isSingleton} operation to explicitly
    * check for a shared singleton instance.
    * <p>Translates aliases back to the corresponding canonical bean name.
-   * Will ask the parent factory if the bean cannot be found in this factory instance.
+   * Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    *
    * @param name the name of the bean to query
    * @return whether this bean will always deliver independent instances
@@ -200,7 +200,7 @@ public interface BeanFactory {
    * More specifically, check whether a {@link #getBean} call for the given name
    * would return an object that is assignable to the specified target type.
    * <p>Translates aliases back to the corresponding canonical bean name.
-   * Will ask the parent factory if the bean cannot be found in this factory instance.
+   * Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    *
    * @param name        the name of the bean to query
    * @param typeToMatch the type to match against (as a {@code ResolvableType})
@@ -218,7 +218,7 @@ public interface BeanFactory {
    * More specifically, check whether a {@link #getBean} call for the given name
    * would return an object that is assignable to the specified target type.
    * <p>Translates aliases back to the corresponding canonical bean name.
-   * Will ask the parent factory if the bean cannot be found in this factory instance.
+   * Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    *
    * @param name        the name of the bean to query
    * @param typeToMatch the type to match against (as a {@code Class})
@@ -237,7 +237,7 @@ public interface BeanFactory {
    * <p>For a {@link FactoryBean}, return the type of object that the FactoryBean creates,
    * as exposed by {@link FactoryBean#getObjectType()}.
    * <p>Translates aliases back to the corresponding canonical bean name.
-   * Will ask the parent factory if the bean cannot be found in this factory instance.
+   * Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    *
    * @param name the name of the bean to query
    * @return the type of the bean, or {@code null} if not determinable
@@ -254,7 +254,7 @@ public interface BeanFactory {
    * <p>If the given name is an alias, the corresponding original bean name
    * and other aliases (if any) will be returned, with the original bean name
    * being the first element in the array.
-   * <p>Will ask the parent factory if the bean cannot be found in this factory instance.
+   * <p>Will ask the parent instantiation if the bean cannot be found in this instantiation instance.
    *
    * @param name the bean name to check for aliases
    * @return the aliases, or an empty array if none

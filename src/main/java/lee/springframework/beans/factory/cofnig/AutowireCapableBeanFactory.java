@@ -135,7 +135,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 
   /**
    * Configure the given raw bean: autowiring bean properties, applying
-   * bean property values, applying factory callbacks such as {@code setBeanName}
+   * bean property values, applying instantiation callbacks such as {@code setBeanName}
    * and {@code setBeanFactory}, and also applying all bean post processors
    * (including ones which might wrap the given raw bean).
    * <p>This is effectively a superset of what {@link #initializeBean} provides,
@@ -244,7 +244,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
    * callbacks are applied, if applicable to the configuration of the instance.
    *
    * @param existingBean the existing bean instance
-   * @param beanName     the name of the bean definition in the bean factory
+   * @param beanName     the name of the bean definition in the bean instantiation
    *                     (a bean definition of that name has to be available)
    * @throws org.springframework.beans.factory.NoSuchBeanDefinitionException if there is no bean definition with the given name
    * @throws BeansException                                                  if applying the property values failed
@@ -253,12 +253,12 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
   void applyBeanPropertyValues(Object existingBean, String beanName) throws BeansException;
 
   /**
-   * Initialize the given raw bean, applying factory callbacks
+   * Initialize the given raw bean, applying instantiation callbacks
    * such as {@code setBeanName} and {@code setBeanFactory},
    * also applying all bean post processors (including ones which
    * might wrap the given raw bean).
    * <p>Note that no bean definition of the given name has to exist
-   * in the bean factory. The passed-in bean name will simply be used
+   * in the bean instantiation. The passed-in bean name will simply be used
    * for callbacks but not checked against the registered bean definitions.
    *
    * @param existingBean the existing bean instance
@@ -331,7 +331,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
   <T> NamedBeanHolder<T> resolveNamedBean(Class<T> requiredType) throws BeansException;
 
   /**
-   * Resolve the specified dependency against the beans defined in this factory.
+   * Resolve the specified dependency against the beans defined in this instantiation.
    *  解析的工厂中定义的指定依赖
    * @param descriptor         the descriptor for the dependency (field/method/constructor)
    * @param requestingBeanName the name of the bean which declares the given dependency
@@ -345,7 +345,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
   Object resolveDependency(DependencyDescriptor descriptor, String requestingBeanName) throws BeansException;
 
   /**
-   * Resolve the specified dependency against the beans defined in this factory.
+   * Resolve the specified dependency against the beans defined in this instantiation.
    *
    * @param descriptor         the descriptor for the dependency (field/method/constructor)
    * @param requestingBeanName the name of the bean which declares the given dependency

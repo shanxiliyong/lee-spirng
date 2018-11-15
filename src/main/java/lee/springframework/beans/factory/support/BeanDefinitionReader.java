@@ -17,8 +17,8 @@ public class BeanDefinitionReader   {
 
 
   /**
-   * Return the bean factory to register the bean definitions with.
-   * <p>The factory is exposed through the BeanDefinitionRegistry interface,
+   * Return the bean instantiation to register the bean definitions with.
+   * <p>The instantiation is exposed through the BeanDefinitionRegistry interface,
    * encapsulating the methods that are relevant for bean definition handling.
    */
   BeanDefinitionRegistry getRegistry();

@@ -94,7 +94,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
   /**
    * Create a new AbstractAutowireCapableBeanFactory with the given parent.
-   * @param parentBeanFactory parent bean factory, or {@code null} if none
+   * @param parentBeanFactory parent bean instantiation, or {@code null} if none
    */
   public AbstractAutowireCapableBeanFactory(BeanFactory parentBeanFactory) {
     this();
@@ -419,10 +419,10 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
    * Actually create the specified bean. Pre-creation processing has already happened
    * at this point, e.g. checking {@code postProcessBeforeInstantiation} callbacks.
    * <p>Differentiates between default bean instantiation, use of a
-   * factory method, and autowiring a constructor.
+   * instantiation method, and autowiring a constructor.
    * @param beanName the name of the bean
    * @param mbd the merged bean definition for the bean
-   * @param args explicit arguments to use for constructor or factory method invocation
+   * @param args explicit arguments to use for constructor or instantiation method invocation
    * @return a new instance of the bean
    * @throws BeanCreationException if the bean could not be created
    * @see #instantiateBean
@@ -576,7 +576,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
   /**
    * Determine the target type for the given bean definition which is based on
-   * a factory method. Only called if there is no singleton instance registered
+   * a instantiation method. Only called if there is no singleton instance registered
    * for the target bean already.
    * <p>This implementation determines the type matching {@link #createBean}'s
    * different creation strategies. As far as possible, we'll perform static
@@ -601,14 +601,14 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
     if (factoryBeanName != null) {
       if (factoryBeanName.equals(beanName)) {
         throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
-                "factory-bean reference points back to the same bean definition");
+                "instantiation-bean reference points back to the same bean definition");
       }
-      // Check declared factory method return type on factory class.
+      // Check declared instantiation method return type on instantiation class.
       factoryClass = getType(factoryBeanName);
       isStatic = false;
     }
     else {
-      // Check declared factory method return type on bean class.
+      // Check declared instantiation method return type on bean class.
       factoryClass = resolveBeanClass(mbd, beanName, typesToMatch);
     }
 
@@ -617,7 +617,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
     }
     factoryClass = ClassUtils.getUserClass(factoryClass);
 
-    // If all factory methods have the same return type, return that type.
+    // If all instantiation methods have the same return type, return that type.
     // Can't clearly figure out exact method due to type converting / autowiring!
     Class<?> commonType = null;
     Method uniqueCandidate = null;
@@ -665,7 +665,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
           }
           catch (Throwable ex) {
             if (logger.isDebugEnabled()) {
-              logger.debug("Failed to resolve generic return type for factory method: " + ex);
+              logger.debug("Failed to resolve generic return type for instantiation method: " + ex);
             }
           }
         }
@@ -681,7 +681,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
     }
 
     if (commonType != null) {
-      // Clear return type found: all factory methods return same type.
+      // Clear return type found: all instantiation methods return same type.
       mbd.factoryMethodReturnType = (uniqueCandidate != null ?
               ResolvableType.forMethodReturnType(uniqueCandidate) : ResolvableType.forClass(commonType));
     }
@@ -706,7 +706,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
     if (factoryBeanName != null) {
       if (factoryMethodName != null) {
-        // Try to obtain the FactoryBean's object type from its factory method declaration
+        // Try to obtain the FactoryBean's object type from its instantiation method declaration
         // without instantiating the containing bean at all.
         BeanDefinition fbDef = getBeanDefinition(factoryBeanName);
         if (fbDef instanceof AbstractBeanDefinition) {
@@ -719,7 +719,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
           }
         }
       }
-      // If not resolvable above and the referenced factory bean doesn't exist yet,
+      // If not resolvable above and the referenced instantiation bean doesn't exist yet,
       // exit here - we don't want to force the creation of another bean just to
       // obtain a FactoryBean's object type...
       if (!isBeanEligibleForMetadataCaching(factoryBeanName)) {
@@ -747,7 +747,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
     if (factoryBeanName == null && mbd.hasBeanClass()) {
       // No early bean instantiation possible: determine FactoryBean's type from
-      // static factory method signature or from class inheritance hierarchy...
+      // static instantiation method signature or from class inheritance hierarchy...
       if (factoryMethodName != null) {
         return getTypeForFactoryBeanFromMethod(mbd.getBeanClass(), factoryMethodName);
       }
@@ -760,10 +760,10 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
   }
 
   /**
-   * Introspect the factory method signatures on the given bean class,
+   * Introspect the instantiation method signatures on the given bean class,
    * trying to find a common {@code FactoryBean} object type declared there.
-   * @param beanClass the bean class to find the factory method on
-   * @param factoryMethodName the name of the factory method
+   * @param beanClass the bean class to find the instantiation method on
+   * @param factoryMethodName the name of the instantiation method
    * @return the common {@code FactoryBean} object type, or {@code null} if none
    */
   private Class<?> getTypeForFactoryBeanFromMethod(Class<?> beanClass, final String factoryMethodName) {
@@ -773,7 +773,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
     // CGLIB subclass methods hide generic parameters; look at the original user class.
     Class<?> fbClass = ClassUtils.getUserClass(beanClass);
 
-    // Find the given factory method, taking into account that in the case of
+    // Find the given instantiation method, taking into account that in the case of
     // @Bean methods, there may be parameters present.
     ReflectionUtils.doWithMethods(fbClass,
             new ReflectionUtils.MethodCallback() {
@@ -973,10 +973,10 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
   /**
    * Create a new instance for the specified bean, using an appropriate instantiation strategy:
-   * factory method, constructor autowiring, or simple instantiation.
+   * instantiation method, constructor autowiring, or simple instantiation.
    * @param beanName the name of the bean
    * @param mbd the bean definition for the bean
-   * @param args explicit arguments to use for constructor or factory method invocation
+   * @param args explicit arguments to use for constructor or instantiation method invocation
    * @return BeanWrapper for the new instance
    * @see #instantiateUsingFactoryMethod
    * @see #autowireConstructor
@@ -1085,9 +1085,9 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
   }
 
   /**
-   * Instantiate the bean using a named factory method. The method may be static, if the
+   * Instantiate the bean using a named instantiation method. The method may be static, if the
    * mbd parameter specifies a class, rather than a factoryBean, or an instance variable
-   * on a factory object itself configured using Dependency Injection.
+   * on a instantiation object itself configured using Dependency Injection.
    * @param beanName the name of the bean
    * @param mbd the bean definition for the bean
    * @param explicitArgs argument values passed in programmatically via the getBean method,
@@ -1104,9 +1104,9 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
   /**
    * "autowire constructor" (with constructor arguments by type) behavior.
    * Also applied if explicit constructor argument values are specified,
-   * matching all remaining arguments with beans from the bean factory.
+   * matching all remaining arguments with beans from the bean instantiation.
    * <p>This corresponds to constructor injection: In this mode, a Spring
-   * bean factory is able to host components that expect constructor-based
+   * bean instantiation is able to host components that expect constructor-based
    * dependency resolution.
    * @param beanName the name of the bean
    * @param mbd the bean definition for the bean
@@ -1206,7 +1206,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
   /**
    * Fill in any missing property values with references to
-   * other beans in this factory if autowire is set to "byName".
+   * other beans in this instantiation if autowire is set to "byName".
    * @param beanName the name of the bean we're wiring up.
    * Useful for debugging messages; not used functionally.
    * @param mbd bean definition to update through autowiring
@@ -1239,7 +1239,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
   /**
    * Abstract method defining "autowire by type" (bean properties by type) behavior.
    * <p>This is like PicoContainer default, in which there must be exactly one bean
-   * of the property type in the bean factory. This makes bean factories simple to
+   * of the property type in the bean instantiation. This makes bean factories simple to
    * configure for small namespaces, but doesn't work as well as standard Spring
    * behavior for bigger applications.
    * @param beanName the name of the bean to autowire by type
@@ -1291,7 +1291,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
   /**
    * Return an array of non-simple bean properties that are unsatisfied.
    * These are probably unsatisfied references to other beans in the
-   * factory. Does not include simple properties like primitives or Strings.
+   * instantiation. Does not include simple properties like primitives or Strings.
    * @param mbd the merged bean definition the bean was created with
    * @param bw the BeanWrapper the bean was created with
    * @return an array of bean property names
@@ -1400,7 +1400,7 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
   /**
    * Apply the given property values, resolving any runtime references
-   * to other beans in this bean factory. Must use deep copy, so we
+   * to other beans in this bean instantiation. Must use deep copy, so we
    * don't permanently modify this property.
    * @param beanName the bean name passed for better exception information
    * @param mbd the merged bean definition
@@ -1513,11 +1513,11 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
 
   /**
-   * Initialize the given bean instance, applying factory callbacks
+   * Initialize the given bean instance, applying instantiation callbacks
    * as well as init methods and bean post processors.
    * <p>Called from {@link #createBean} for traditionally defined beans,
    * and from {@link #initializeBean} for existing bean instances.
-   * @param beanName the bean name in the factory (for debugging purposes)
+   * @param beanName the bean name in the instantiation (for debugging purposes)
    * @param bean the new bean instance we may need to initialize
    * @param mbd the bean definition that the bean was created with
    * (can also be {@code null}, if given an existing bean instance)
@@ -1579,10 +1579,10 @@ public class AbstractAutowireCapableBeanFactory  extends AbstractBeanFactory imp
 
   /**
    * Give a bean a chance to react now all its properties are set,
-   * and a chance to know about its owning bean factory (this object).
+   * and a chance to know about its owning bean instantiation (this object).
    * This means checking whether the bean implements InitializingBean or defines
    * a custom init method, and invoking the necessary callback(s) if it does.
-   * @param beanName the bean name in the factory (for debugging purposes)
+   * @param beanName the bean name in the instantiation (for debugging purposes)
    * @param bean the new bean instance we may need to initialize
    * @param mbd the merged bean definition that the bean was created with
    * (can also be {@code null}, if given an existing bean instance)

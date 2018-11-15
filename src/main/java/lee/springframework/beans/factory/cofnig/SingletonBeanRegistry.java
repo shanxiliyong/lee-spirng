@@ -82,18 +82,18 @@ public interface SingletonBeanRegistry {
    * <p>The main purpose of this method is to check manually registered singletons
    * (see {@link #registerSingleton}). Can also be used to check whether a
    * singleton defined by a bean definition has already been created.
-   * <p>To check whether a bean factory contains a bean definition with a given name,
+   * <p>To check whether a bean instantiation contains a bean definition with a given name,
    * use ListableBeanFactory's {@code containsBeanDefinition}. Calling both
    * {@code containsBeanDefinition} and {@code containsSingleton} answers
-   * whether a specific bean factory contains a local bean instance with the given name.
+   * whether a specific bean instantiation contains a local bean instance with the given name.
    * <p>Use BeanFactory's {@code containsBean} for general checks whether the
-   * factory knows about a bean with a given name (whether manually registered singleton
+   * instantiation knows about a bean with a given name (whether manually registered singleton
    * instance or created by bean definition), also checking ancestor factories.
    * <p><b>NOTE:</b> This lookup method is not aware of FactoryBean prefixes or aliases.
    * You need to resolve the canonical bean name first before checking the singleton status.
    *
    * @param beanName the name of the bean to look for
-   * @return if this bean factory contains a singleton instance with the given name
+   * @return if this bean instantiation contains a singleton instance with the given name
    * @see #registerSingleton
    * @see org.springframework.beans.factory.ListableBeanFactory#containsBeanDefinition
    * @see org.springframework.beans.factory.BeanFactory#containsBean

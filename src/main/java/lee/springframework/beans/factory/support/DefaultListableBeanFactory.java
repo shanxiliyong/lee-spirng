@@ -65,11 +65,11 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
   }
 
 
-  /** Map from serialized id to factory instance */
+  /** Map from serialized id to instantiation instance */
   private static final Map<String, Reference<DefaultListableBeanFactory>> serializableFactories =
           new ConcurrentHashMap<String, Reference<DefaultListableBeanFactory>>(8);
 
-  /** Optional id for this factory, for serialization purposes */
+  /** Optional id for this instantiation, for serialization purposes */
   private String serializationId;
 
   /** Whether to allow re-registration of a different definition with the same name */
@@ -169,7 +169,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
   }
 
   /**
-   * Set whether the factory is allowed to eagerly load bean classes
+   * Set whether the instantiation is allowed to eagerly load bean classes
    * even for bean definitions that are marked as "lazy-init".
    * <p>Default is "true". Turn this flag off to suppress class loading
    * for lazy-init beans unless such a bean is explicitly requested.
@@ -183,7 +183,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
   }
 
   /**
-   * Return whether the factory is allowed to eagerly load bean classes
+   * Return whether the instantiation is allowed to eagerly load bean classes
    * even for bean definitions that are marked as "lazy-init".
    * @since 4.1.2
    */
@@ -421,8 +421,8 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
   /**
    * Check whether the specified bean would need to be eagerly initialized
    * in order to determine its type.
-   * @param factoryBeanName a factory-bean reference that the bean definition
-   * defines a factory method for
+   * @param factoryBeanName a instantiation-bean reference that the bean definition
+   * defines a instantiation method for
    * @return whether eager initialization is necessary
    */
   private boolean requiresEagerInitForType(String factoryBeanName) {
@@ -564,7 +564,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
 
     BeanFactory parent = getParentBeanFactory();
     if (parent instanceof DefaultListableBeanFactory) {
-      // No bean definition found in this factory -> delegate to parent.
+      // No bean definition found in this instantiation -> delegate to parent.
       return ((DefaultListableBeanFactory) parent).isAutowireCandidate(beanName, descriptor, resolver);
     }
     else if (parent instanceof ConfigurableListableBeanFactory) {
@@ -642,7 +642,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
 
   /**
    * Considers all beans as eligible for metadata caching
-   * if the factory's configuration has been marked as frozen.
+   * if the instantiation's configuration has been marked as frozen.
    * @see #freezeConfiguration()
    */
   @Override
@@ -657,7 +657,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
     }
 
     // Iterate over a copy to allow for init methods which in turn register new bean definitions.
-    // While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+    // While this may not be part of the regular instantiation bootstrap, it does otherwise work fine.
     List<String> beanNames = new ArrayList<String>(this.beanDefinitionNames);
 
     // Trigger initialization of all non-lazy singleton beans...
@@ -1389,7 +1389,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
 
   /**
    * Determine whether the given beanName/candidateName pair indicates a self reference,
-   * i.e. whether the candidate points back to the original bean or to a factory method
+   * i.e. whether the candidate points back to the original bean or to a instantiation method
    * on the original bean.
    */
   private boolean isSelfReference(String beanName, String candidateName) {
@@ -1446,7 +1446,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
     sb.append("]; ");
     BeanFactory parent = getParentBeanFactory();
     if (parent == null) {
-      sb.append("root of factory hierarchy");
+      sb.append("root of instantiation hierarchy");
     }
     else {
       sb.append("parent: ").append(ObjectUtils.identityToString(parent));
@@ -1475,8 +1475,8 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
 
 
   /**
-   * Minimal id reference to the factory.
-   * Resolved to the actual factory instance on deserialization.
+   * Minimal id reference to the instantiation.
+   * Resolved to the actual instantiation instance on deserialization.
    */
   private static class SerializedBeanFactoryReference implements Serializable {
 
@@ -1494,7 +1494,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
           return result;
         }
       }
-      // Lenient fallback: dummy factory in case of original factory not found...
+      // Lenient fallback: dummy instantiation in case of original instantiation not found...
       return new StaticListableBeanFactory(Collections.<String, Object> emptyMap());
     }
   }
@@ -1634,7 +1634,7 @@ public class DefaultListableBeanFactory  extends AbstractAutowireCapableBeanFact
   /**
    * An {@link org.springframework.core.OrderComparator.OrderSourceProvider} implementation
    * that is aware of the bean metadata of the instances to sort.
-   * <p>Lookup for the method factory of an instance to sort, if any, and let the
+   * <p>Lookup for the method instantiation of an instance to sort, if any, and let the
    * comparator retrieve the {@link org.springframework.core.annotation.Order}
    * value defined on it. This essentially allows for the following construct:
    */

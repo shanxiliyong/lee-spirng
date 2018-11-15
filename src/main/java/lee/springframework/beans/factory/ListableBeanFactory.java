@@ -24,11 +24,11 @@ import java.util.Map;
  * 需要提前加载累的定义信息的工厂需要实现此接口
  * <p>If this is a {@link HierarchicalBeanFactory}, the return values will <i>not</i>
  * take any BeanFactory hierarchy into account, but will relate only to the beans
- * defined in the current factory. Use the {@link BeanFactoryUtils} helper class
+ * defined in the current instantiation. Use the {@link BeanFactoryUtils} helper class
  * to consider beans in ancestor factories too.
  * 如果是{@link HierarchicalBeanFactory}，方法返回的只是当前工厂的个数，不包括父工厂定义的个数
  *
- * <p>The methods in this interface will just respect bean definitions of this factory.
+ * <p>The methods in this interface will just respect bean definitions of this instantiation.
  * They will ignore any singleton beans that have been registered by other means like
  * {@link org.springframework.beans.factory.config.ConfigurableBeanFactory}'s
  * {@code registerSingleton} method, with the exception of
@@ -51,34 +51,34 @@ import java.util.Map;
 public interface ListableBeanFactory extends BeanFactory {
 
   /**
-   * Check if this bean factory contains a bean definition with the given name.
-   * <p>Does not consider any hierarchy this factory may participate in,
+   * Check if this bean instantiation contains a bean definition with the given name.
+   * <p>Does not consider any hierarchy this instantiation may participate in,
    * and ignores any singleton beans that have been registered by
    * other means than bean definitions.
    * 不考虑继承的bean和通过其他方式注册的bean
    * @param beanName the name of the bean to look for
-   * @return if this bean factory contains a bean definition with the given name
+   * @return if this bean instantiation contains a bean definition with the given name
    * @see #containsBean
    */
   boolean containsBeanDefinition(String beanName);
 
   /**
-   * Return the number of beans defined in the factory.
-   * <p>Does not consider any hierarchy this factory may participate in,
+   * Return the number of beans defined in the instantiation.
+   * <p>Does not consider any hierarchy this instantiation may participate in,
    * and ignores any singleton beans that have been registered by
    * other means than bean definitions.
    *
-   * @return the number of beans defined in the factory
+   * @return the number of beans defined in the instantiation
    */
   int getBeanDefinitionCount();
 
   /**
-   * Return the names of all beans defined in this factory.
-   * <p>Does not consider any hierarchy this factory may participate in,
+   * Return the names of all beans defined in this instantiation.
+   * <p>Does not consider any hierarchy this instantiation may participate in,
    * and ignores any singleton beans that have been registered by
    * other means than bean definitions.
    *
-   * @return the names of all beans defined in this factory,
+   * @return the names of all beans defined in this instantiation,
    * or an empty array if none defined
    */
   String[] getBeanDefinitionNames();
@@ -94,7 +94,7 @@ public interface ListableBeanFactory extends BeanFactory {
    * <p>Does consider objects created by FactoryBeans, which means that FactoryBeans
    * will get initialized. If the object created by the FactoryBean doesn't match,
    * the raw FactoryBean itself will be matched against the type.
-   * <p>Does not consider any hierarchy this factory may participate in.
+   * <p>Does not consider any hierarchy this instantiation may participate in.
    * Use BeanFactoryUtils' {@code beanNamesForTypeIncludingAncestors}
    * to include beans in ancestor factories too.
    * <p>Note: Does <i>not</i> ignore singleton beans that have been registered
@@ -124,7 +124,7 @@ public interface ListableBeanFactory extends BeanFactory {
    * <p>Does consider objects created by FactoryBeans, which means that FactoryBeans
    * will get initialized. If the object created by the FactoryBean doesn't match,
    * the raw FactoryBean itself will be matched against the type.
-   * <p>Does not consider any hierarchy this factory may participate in.
+   * <p>Does not consider any hierarchy this instantiation may participate in.
    * Use BeanFactoryUtils' {@code beanNamesForTypeIncludingAncestors}
    * to include beans in ancestor factories too.
    * <p>Note: Does <i>not</i> ignore singleton beans that have been registered
@@ -155,7 +155,7 @@ public interface ListableBeanFactory extends BeanFactory {
    * FactoryBean doesn't match, the raw FactoryBean itself will be matched against the
    * type. If "allowEagerInit" is not set, only raw FactoryBeans will be checked
    * (which doesn't require initialization of each FactoryBean).
-   * <p>Does not consider any hierarchy this factory may participate in.
+   * <p>Does not consider any hierarchy this instantiation may participate in.
    * Use BeanFactoryUtils' {@code beanNamesForTypeIncludingAncestors}
    * to include beans in ancestor factories too.
    * <p>Note: Does <i>not</i> ignore singleton beans that have been registered
@@ -167,10 +167,10 @@ public interface ListableBeanFactory extends BeanFactory {
    * @param includeNonSingletons whether to include prototype or scoped beans too
    *                             or just singletons (also applies to FactoryBeans)
    * @param allowEagerInit       whether to initialize <i>lazy-init singletons</i> and
-   *                             <i>objects created by FactoryBeans</i> (or by factory methods with a
-   *                             "factory-bean" reference) for the type check. Note that FactoryBeans need to be
+   *                             <i>objects created by FactoryBeans</i> (or by instantiation methods with a
+   *                             "instantiation-bean" reference) for the type check. Note that FactoryBeans need to be
    *                             eagerly initialized to determine their type: So be aware that passing in "true"
-   *                             for this flag will initialize FactoryBeans and "factory-bean" references.
+   *                             for this flag will initialize FactoryBeans and "instantiation-bean" references.
    * @return the names of beans (or objects created by FactoryBeans) matching
    * the given object type (including subclasses), or an empty array if none
    * @see FactoryBean#getObjectType
@@ -187,7 +187,7 @@ public interface ListableBeanFactory extends BeanFactory {
    * <p>Does consider objects created by FactoryBeans, which means that FactoryBeans
    * will get initialized. If the object created by the FactoryBean doesn't match,
    * the raw FactoryBean itself will be matched against the type.
-   * <p>Does not consider any hierarchy this factory may participate in.
+   * <p>Does not consider any hierarchy this instantiation may participate in.
    * Use BeanFactoryUtils' {@code beansOfTypeIncludingAncestors}
    * to include beans in ancestor factories too.
    * <p>Note: Does <i>not</i> ignore singleton beans that have been registered
@@ -220,7 +220,7 @@ public interface ListableBeanFactory extends BeanFactory {
    * FactoryBean doesn't match, the raw FactoryBean itself will be matched against the
    * type. If "allowEagerInit" is not set, only raw FactoryBeans will be checked
    * (which doesn't require initialization of each FactoryBean).
-   * <p>Does not consider any hierarchy this factory may participate in.
+   * <p>Does not consider any hierarchy this instantiation may participate in.
    * Use BeanFactoryUtils' {@code beansOfTypeIncludingAncestors}
    * to include beans in ancestor factories too.
    * <p>Note: Does <i>not</i> ignore singleton beans that have been registered
@@ -233,10 +233,10 @@ public interface ListableBeanFactory extends BeanFactory {
    * @param includeNonSingletons whether to include prototype or scoped beans too
    *                             or just singletons (also applies to FactoryBeans)
    * @param allowEagerInit       whether to initialize <i>lazy-init singletons</i> and
-   *                             <i>objects created by FactoryBeans</i> (or by factory methods with a
-   *                             "factory-bean" reference) for the type check. Note that FactoryBeans need to be
+   *                             <i>objects created by FactoryBeans</i> (or by instantiation methods with a
+   *                             "instantiation-bean" reference) for the type check. Note that FactoryBeans need to be
    *                             eagerly initialized to determine their type: So be aware that passing in "true"
-   *                             for this flag will initialize FactoryBeans and "factory-bean" references.
+   *                             for this flag will initialize FactoryBeans and "instantiation-bean" references.
    * @return a Map with the matching beans, containing the bean names as
    * keys and the corresponding bean instances as values
    * @throws BeansException if a bean could not be created

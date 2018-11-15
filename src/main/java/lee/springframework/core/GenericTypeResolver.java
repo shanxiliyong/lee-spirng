@@ -84,7 +84,7 @@ public class GenericTypeResolver {
    * Determine the target type for the generic return type of the given
    * <em>generic method</em>, where formal type variables are declared on
    * the given method itself.
-   * <p>For example, given a factory method with the following signature,
+   * <p>For example, given a instantiation method with the following signature,
    * if {@code resolveReturnTypeForGenericMethod()} is invoked with the reflected
    * method for {@code creatProxy()} and an {@code Object[]} array containing
    * {@code MyService.class}, {@code resolveReturnTypeForGenericMethod()} will

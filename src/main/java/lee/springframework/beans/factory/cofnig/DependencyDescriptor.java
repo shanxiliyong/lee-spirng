@@ -166,13 +166,13 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
   }
 
   /**
-   * Resolve a shortcut for this dependency against the given factory, for example
+   * Resolve a shortcut for this dependency against the given instantiation, for example
    * taking some pre-resolved information into account.
    * <p>The resolution algorithm will first attempt to resolve a shortcut through this
    * method before going into the regular type matching algorithm across all beans.
    * Subclasses may override this method to improve resolution performance based on
    * pre-cached information while still receiving {@link InjectionPoint} exposure etc.
-   * @param beanFactory the associated factory
+   * @param beanFactory the associated instantiation
    * @return the shortcut result if any, or {@code null} if none
    * @throws BeansException if the shortcut could not be obtained
    * @since 4.3.1
@@ -183,12 +183,12 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
   /**
    * Resolve the specified bean name, as a candidate result of the matching
-   * algorithm for this dependency, to a bean instance from the given factory.
+   * algorithm for this dependency, to a bean instance from the given instantiation.
    * <p>The default implementation calls {@link BeanFactory#getBean(String)}.
    * Subclasses may provide additional arguments or other customizations.
    * @param beanName the bean name, as a candidate result for this dependency
    * @param requiredType the expected type of the bean (as an assertion)
-   * @param beanFactory the associated factory
+   * @param beanFactory the associated instantiation
    * @return the bean instance (never {@code null})
    * @throws BeansException if the bean could not be obtained
    * @since 4.3.2
